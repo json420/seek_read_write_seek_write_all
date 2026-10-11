@@ -12,7 +12,8 @@ pub fn add(left: u64, right: u64) -> u64 {
 mod tests {
     use super::*;
     use std::fs::{self, File, OpenOptions};
-    use std::io::{self, ErrorKind, Read, Seek, SeekFrom, Write};
+    use std::io::{self, BorrowedBuf, ErrorKind, Read, Seek, SeekFrom, Write};
+    use std::mem::MaybeUninit;
 
     macro_rules! check {
         ($e:expr) => {
@@ -298,5 +299,47 @@ mod tests {
             assert_eq!(&buf, MSG);
             check!(mock_file.seek_write_all(&buf, 420));
         }
+    }
+
+    #[test]
+    fn test_seek_read_buf_exact() {
+        let tmpdir = tempfile::TempDir::new().unwrap();
+        let filename = tmpdir
+            .path()
+            .join("file_rt_io_file_test_seek_read_buf_exact.txt");
+        {
+            let oo = OpenOptions::new()
+                .create_new(true)
+                .write(true)
+                .read(true)
+                .clone();
+            let mut file = check!(oo.open(&filename));
+            check!(file.write_all(b"0123456789"));
+        }
+        {
+            let mut file = check!(File::open(&filename));
+            let mut buf: [MaybeUninit<u8>; 5] = [MaybeUninit::uninit(); 5];
+            let mut buf = BorrowedBuf::from(buf.as_mut_slice());
+
+            // Exact read
+            check!(file.seek_read_buf_exact(buf.unfilled(), 2));
+            assert_eq!(buf.filled(), b"23456");
+            assert_eq!(check!(file.stream_position()), 7);
+
+            // Already full
+            check!(file.seek_read_buf_exact(buf.unfilled(), 3));
+            assert_eq!(check!(file.stream_position()), 7);
+            check!(file.seek_read_buf_exact(buf.unfilled(), 10)); // No call to seek_read()
+            assert_eq!(buf.filled(), b"23456");
+            assert_eq!(check!(file.stream_position()), 7);
+
+            // Non-empty exact read past eof fails
+            let err = file
+                .seek_read_buf_exact(buf.clear().unfilled(), 6)
+                .unwrap_err();
+            assert_eq!(err.kind(), ErrorKind::UnexpectedEof);
+            assert_eq!(check!(file.stream_position()), 10);
+        }
+        check!(fs::remove_file(&filename));
     }
 }
