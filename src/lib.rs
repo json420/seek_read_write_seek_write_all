@@ -2,7 +2,6 @@
 #![feature(seek_read_exact_seek_write_all)]
 
 use std::os::windows::fs::FileExt;
-use tempfile;
 
 pub fn add(left: u64, right: u64) -> u64 {
     left + right
@@ -11,9 +10,11 @@ pub fn add(left: u64, right: u64) -> u64 {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use getrandom;
     use std::fs::{self, File, OpenOptions};
     use std::io::{self, BorrowedBuf, ErrorKind, Read, Seek, SeekFrom, Write};
     use std::mem::MaybeUninit;
+    use tempfile;
 
     macro_rules! check {
         ($e:expr) => {
@@ -28,6 +29,27 @@ mod tests {
     fn it_works() {
         let result = add(2, 2);
         assert_eq!(result, 4);
+    }
+
+    #[test]
+    fn test_seek_read_exact_seek_write_all() {
+        // Make sure windows FileExt.seek_read_exact(), .seek_write_all() are available
+        let mut file = tempfile::tempfile().unwrap();
+        let mut data = [0; 420];
+        getrandom::fill(&mut data).unwrap();
+        let data = data;
+        file.seek_write_all(&data, 0).unwrap();
+        let mut buf = [0; 42];
+        file.seek_read_exact(&mut buf, 22).unwrap();
+        assert_eq!(&buf, &data[22..64]);
+        assert_eq!(file.stream_position().unwrap(), 64);
+
+        // Make sure .seek_read_buf_exact() is available
+        let mut buf: [MaybeUninit<u8>; 11] = [MaybeUninit::uninit(); 11];
+        let mut buf = BorrowedBuf::from(buf.as_mut_slice());
+        file.seek_read_buf_exact(buf.unfilled(), 69).unwrap();
+        assert_eq!(buf.filled(), &data[69..80]);
+        assert_eq!(file.stream_position().unwrap(), 80);
     }
 
     #[test]
