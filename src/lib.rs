@@ -372,17 +372,20 @@ mod tests {
         }
 
         for offset in [0, 1, 420] {
-            let mock_file = MockFile::new(offset);
-            let mut buf = [0; MSG.len()];
-            assert_eq!(*mock_file.read_calls.borrow(), 0);
-            assert_eq!(*mock_file.write_calls.borrow(), 0);
-            check!(mock_file.seek_read_exact(&mut buf, offset));
-            assert_eq!(*mock_file.read_calls.borrow(), MSG.len() * 2);
-            assert_eq!(*mock_file.write_calls.borrow(), 0);
-            assert_eq!(&buf, MSG);
-            check!(mock_file.seek_write_all(&buf, offset));
-            assert_eq!(*mock_file.read_calls.borrow(), MSG.len() * 2);
-            assert_eq!(*mock_file.write_calls.borrow(), MSG.len() * 2);
+            {
+                let mock_file = MockFile::new(offset);
+                let mut buf = [0; MSG.len()];
+                check!(mock_file.seek_read_exact(&mut buf, offset));
+                assert_eq!(&buf, MSG);
+                assert_eq!(*mock_file.read_calls.borrow(), MSG.len() * 2);
+                assert_eq!(*mock_file.write_calls.borrow(), 0);
+            }
+            {
+                let mock_file = MockFile::new(offset);
+                check!(mock_file.seek_write_all(MSG, offset));
+                assert_eq!(*mock_file.read_calls.borrow(), 0);
+                assert_eq!(*mock_file.write_calls.borrow(), MSG.len() * 2);
+            }
         }
     }
 
