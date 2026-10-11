@@ -355,10 +355,7 @@ mod tests {
                     buf[0..1].copy_from_slice(&MSG[offset..offset + 1]);
                     Ok(1)
                 } else {
-                    Err(io::Error::new(
-                        ErrorKind::Interrupted,
-                        "bruh, interrupting read",
-                    ))
+                    Err(io::Error::new(ErrorKind::Interrupted, "interrupting read"))
                 }
             }
 
@@ -369,30 +366,21 @@ mod tests {
                     assert_eq!(buf[0..1], MSG[offset..offset + 1]);
                     Ok(1)
                 } else {
-                    Err(io::Error::new(
-                        ErrorKind::Interrupted,
-                        "bruh, interrupting write",
-                    ))
+                    Err(io::Error::new(ErrorKind::Interrupted, "interrupting write"))
                 }
             }
         }
 
-        {
-            let mock_file = MockFile::new(0);
+        for offset in [0, 1, 420] {
+            let mock_file = MockFile::new(offset);
             let mut buf = [0; MSG.len()];
-            check!(mock_file.seek_read_exact(&mut buf, 0));
-            assert_eq!(&buf, MSG);
-            check!(mock_file.seek_write_all(&buf, 0));
+            assert_eq!(*mock_file.read_calls.borrow(), 0);
+            assert_eq!(*mock_file.write_calls.borrow(), 0);
+            check!(mock_file.seek_read_exact(&mut buf, offset));
             assert_eq!(*mock_file.read_calls.borrow(), MSG.len() * 2);
-            assert_eq!(*mock_file.write_calls.borrow(), MSG.len() * 2);
-        }
-
-        {
-            let mock_file = MockFile::new(420);
-            let mut buf = [0; MSG.len()];
-            check!(mock_file.seek_read_exact(&mut buf, 420));
+            assert_eq!(*mock_file.write_calls.borrow(), 0);
             assert_eq!(&buf, MSG);
-            check!(mock_file.seek_write_all(&buf, 420));
+            check!(mock_file.seek_write_all(&buf, offset));
             assert_eq!(*mock_file.read_calls.borrow(), MSG.len() * 2);
             assert_eq!(*mock_file.write_calls.borrow(), MSG.len() * 2);
         }
