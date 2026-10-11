@@ -355,15 +355,25 @@ mod tests {
                     buf[0..1].copy_from_slice(&MSG[offset..offset + 1]);
                     Ok(1)
                 } else {
-                    Err(io::Error::new(ErrorKind::Interrupted, "bruh, interrupting"))
+                    Err(io::Error::new(
+                        ErrorKind::Interrupted,
+                        "bruh, interrupting read",
+                    ))
                 }
             }
 
             fn seek_write(&self, buf: &[u8], offset: u64) -> io::Result<usize> {
                 *self.write_calls.borrow_mut() += 1;
-                let offset = (offset - self.base_offset) as usize;
-                assert_eq!(buf[0..1], MSG[offset..offset + 1]);
-                Ok(1)
+                if *self.write_calls.borrow() % 2 == 0 {
+                    let offset = (offset - self.base_offset) as usize;
+                    assert_eq!(buf[0..1], MSG[offset..offset + 1]);
+                    Ok(1)
+                } else {
+                    Err(io::Error::new(
+                        ErrorKind::Interrupted,
+                        "bruh, interrupting write",
+                    ))
+                }
             }
         }
 
