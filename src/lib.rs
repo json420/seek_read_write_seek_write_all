@@ -384,7 +384,7 @@ mod tests {
             assert_eq!(&buf, MSG);
             check!(mock_file.seek_write_all(&buf, 0));
             assert_eq!(*mock_file.read_calls.borrow(), MSG.len() * 2);
-            assert_eq!(*mock_file.write_calls.borrow(), MSG.len());
+            assert_eq!(*mock_file.write_calls.borrow(), MSG.len() * 2);
         }
 
         {
@@ -394,7 +394,7 @@ mod tests {
             assert_eq!(&buf, MSG);
             check!(mock_file.seek_write_all(&buf, 420));
             assert_eq!(*mock_file.read_calls.borrow(), MSG.len() * 2);
-            assert_eq!(*mock_file.write_calls.borrow(), MSG.len());
+            assert_eq!(*mock_file.write_calls.borrow(), MSG.len() * 2);
         }
     }
 
