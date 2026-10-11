@@ -351,11 +351,11 @@ mod tests {
             fn seek_read(&self, buf: &mut [u8], offset: u64) -> io::Result<usize> {
                 *self.read_calls.borrow_mut() += 1;
                 if *self.read_calls.borrow() % 2 == 0 {
-                    Err(io::Error::new(ErrorKind::Interrupted, "bruh, interrupting"))
-                } else {
                     let offset = (offset - self.base_offset) as usize;
                     buf[0..1].copy_from_slice(&MSG[offset..offset + 1]);
                     Ok(1)
+                } else {
+                    Err(io::Error::new(ErrorKind::Interrupted, "bruh, interrupting"))
                 }
             }
 
