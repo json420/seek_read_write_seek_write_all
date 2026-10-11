@@ -324,6 +324,71 @@ mod tests {
     }
 
     #[test]
+    fn file_test_windows_fileext_trait_case_6() {
+        use std::cell::RefCell;
+
+        const MSG: &[u8] =
+        b"Rust is for students and those who are interested in learning about systems concepts.";
+
+        // Test pathological case where seek_read(), seek_write() only do 1 byte per call, return Ok(1)
+        struct MockFile {
+            base_offset: u64,
+            read_calls: RefCell<usize>,
+            write_calls: RefCell<usize>,
+        }
+
+        impl MockFile {
+            fn new(base_offset: u64) -> Self {
+                Self {
+                    base_offset,
+                    read_calls: RefCell::new(0),
+                    write_calls: RefCell::new(0),
+                }
+            }
+        }
+
+        impl FileExt for MockFile {
+            fn seek_read(&self, buf: &mut [u8], offset: u64) -> io::Result<usize> {
+                *self.read_calls.borrow_mut() += 1;
+                if *self.read_calls.borrow() % 2 == 0 {
+                    Err(io::Error::new(ErrorKind::Interrupted, "bruh, interrupting"))
+                } else {
+                    let offset = (offset - self.base_offset) as usize;
+                    buf[0..1].copy_from_slice(&MSG[offset..offset + 1]);
+                    Ok(1)
+                }
+            }
+
+            fn seek_write(&self, buf: &[u8], offset: u64) -> io::Result<usize> {
+                *self.write_calls.borrow_mut() += 1;
+                let offset = (offset - self.base_offset) as usize;
+                assert_eq!(buf[0..1], MSG[offset..offset + 1]);
+                Ok(1)
+            }
+        }
+
+        {
+            let mock_file = MockFile::new(0);
+            let mut buf = [0; MSG.len()];
+            check!(mock_file.seek_read_exact(&mut buf, 0));
+            assert_eq!(&buf, MSG);
+            check!(mock_file.seek_write_all(&buf, 0));
+            assert_eq!(*mock_file.read_calls.borrow(), MSG.len() * 2);
+            assert_eq!(*mock_file.write_calls.borrow(), MSG.len());
+        }
+
+        {
+            let mock_file = MockFile::new(420);
+            let mut buf = [0; MSG.len()];
+            check!(mock_file.seek_read_exact(&mut buf, 420));
+            assert_eq!(&buf, MSG);
+            check!(mock_file.seek_write_all(&buf, 420));
+            assert_eq!(*mock_file.read_calls.borrow(), MSG.len() * 2);
+            assert_eq!(*mock_file.write_calls.borrow(), MSG.len());
+        }
+    }
+
+    #[test]
     fn test_seek_read_buf_exact() {
         let tmpdir = tempfile::TempDir::new().unwrap();
         let filename = tmpdir
