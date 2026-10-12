@@ -308,12 +308,14 @@ mod tests {
 
         impl FileExt for MockFile {
             fn seek_read(&self, buf: &mut [u8], offset: u64) -> io::Result<usize> {
+                *self.read_calls.borrow_mut() += 1;
                 let offset = (offset - self.base_offset) as usize;
                 buf[0..1].copy_from_slice(&MSG[offset..offset + 1]);
                 Ok(1)
             }
 
             fn seek_write(&self, buf: &[u8], offset: u64) -> io::Result<usize> {
+                *self.write_calls.borrow_mut() += 1;
                 let offset = (offset - self.base_offset) as usize;
                 assert_eq!(buf[0..1], MSG[offset..offset + 1]);
                 Ok(1)
