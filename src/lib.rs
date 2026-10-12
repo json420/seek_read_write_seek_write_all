@@ -330,7 +330,9 @@ mod tests {
         const MSG: &[u8] =
         b"Rust is for students and those who are interested in learning about systems concepts.";
 
-        // Test pathological case where seek_read(), seek_write() only do 1 byte per call, return Ok(1)
+        // Test extra pathological case where seek_read(), seek_write() return an `ErrorKind::Interrupted`
+        // `Err()` on even calls (starting with the first) and return `Ok(1)` on odd calls, only
+        // doing one byte of work for 2 calls.
         struct MockFile {
             base_offset: u64,
             read_calls: RefCell<usize>,
