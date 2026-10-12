@@ -345,7 +345,7 @@ mod tests {
         use std::cell::RefCell;
 
         const MSG: &[u8] =
-        b"Rust is for students and those who are interested in learning about systems concepts.";
+        b"The Rustonomicon digs into all the awful details that you need to understand when writing Unsafe Rust programs.";
 
         // Test extra pathological case where seek_read(), seek_write() return an `ErrorKind::Interrupted`
         // `Err()` on even calls (starting with the first) and return `Ok(1)` on odd calls, only
@@ -369,7 +369,7 @@ mod tests {
         impl FileExt for MockFile {
             fn seek_read(&self, buf: &mut [u8], offset: u64) -> io::Result<usize> {
                 *self.read_calls.borrow_mut() += 1;
-                if *self.read_calls.borrow() % 2 == 0 {
+                if (*self.read_calls.borrow()).is_multiple_of(2) {
                     let offset = (offset - self.base_offset) as usize;
                     buf[0..1].copy_from_slice(&MSG[offset..offset + 1]);
                     Ok(1)
@@ -380,7 +380,7 @@ mod tests {
 
             fn seek_write(&self, buf: &[u8], offset: u64) -> io::Result<usize> {
                 *self.write_calls.borrow_mut() += 1;
-                if *self.write_calls.borrow() % 2 == 0 {
+                if (*self.write_calls.borrow()).is_multiple_of(2) {
                     let offset = (offset - self.base_offset) as usize;
                     assert_eq!(buf[0..1], MSG[offset..offset + 1]);
                     Ok(1)
