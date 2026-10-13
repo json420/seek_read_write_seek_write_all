@@ -152,7 +152,7 @@ mod tests {
             }
         }
 
-        {
+        for offset in [0, 1, 420] {
             let mock_file = MockFile { expected_offset: 0 };
             let mut buf = [0; 256];
             assert_eq!(
@@ -161,21 +161,6 @@ mod tests {
             );
             assert_eq!(
                 mock_file.seek_write_all(&buf, 0).unwrap_err().kind(),
-                io::ErrorKind::WriteZero
-            );
-        }
-
-        {
-            let mock_file = MockFile {
-                expected_offset: 420,
-            };
-            let mut buf = [0; 256];
-            assert_eq!(
-                mock_file.seek_read_exact(&mut buf, 420).unwrap_err().kind(),
-                io::ErrorKind::UnexpectedEof
-            );
-            assert_eq!(
-                mock_file.seek_write_all(&buf, 420).unwrap_err().kind(),
                 io::ErrorKind::WriteZero
             );
         }
@@ -204,34 +189,23 @@ mod tests {
             }
         }
 
-        {
-            let mock_file = MockFile { expected_offset: 0 };
-            let mut buf = [0; 256];
-            assert_eq!(
-                mock_file.seek_read_exact(&mut buf, 0).unwrap_err().kind(),
-                io::ErrorKind::PermissionDenied
-            );
-            assert_eq!(
-                mock_file.seek_write_all(&buf, 0).unwrap_err().kind(),
-                io::ErrorKind::ConnectionRefused
-            );
-        }
-
-        {
+        for offset in [0, 1, 420] {
             let mock_file = MockFile {
-                expected_offset: 420,
+                expected_offset: offset,
             };
             let mut buf = [0; 256];
             assert_eq!(
-                mock_file.seek_read_exact(&mut buf, 420).unwrap_err().kind(),
+                mock_file
+                    .seek_read_exact(&mut buf, offset)
+                    .unwrap_err()
+                    .kind(),
                 io::ErrorKind::PermissionDenied
             );
             assert_eq!(
-                mock_file.seek_write_all(&buf, 420).unwrap_err().kind(),
+                mock_file.seek_write_all(&buf, offset).unwrap_err().kind(),
                 io::ErrorKind::ConnectionRefused
             );
         }
-        // FIXME: Cover io::ErrorKind::Interrupted, but don't infinite loop ;)
     }
 
     #[test]
