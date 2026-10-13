@@ -217,11 +217,13 @@ mod tests {
 
         impl FileExt for MockFile {
             fn seek_read(&self, _buf: &mut [u8], offset: u64) -> io::Result<usize> {
+                *self.read_calls.borrow_mut() += 1;
                 assert_eq!(offset, self.expected_offset);
                 Err(io::Error::new(io::ErrorKind::PermissionDenied, "seek_read"))
             }
 
             fn seek_write(&self, _buf: &[u8], offset: u64) -> io::Result<usize> {
+                *self.write_calls.borrow_mut() += 1;
                 assert_eq!(offset, self.expected_offset);
                 Err(io::Error::new(
                     io::ErrorKind::ConnectionRefused,
