@@ -1,8 +1,6 @@
 #![feature(core_io_borrowed_buf)]
 #![feature(seek_read_exact_seek_write_all)]
 
-use std::os::windows::fs::FileExt;
-
 pub fn add(left: u64, right: u64) -> u64 {
     left + right
 }
@@ -14,6 +12,7 @@ mod tests {
     use std::fs::{self, File, OpenOptions};
     use std::io::{self, BorrowedBuf, ErrorKind, Read, Seek, SeekFrom, Write};
     use std::mem::MaybeUninit;
+    use std::os::windows::fs::FileExt;
     use tempfile;
 
     macro_rules! check {
@@ -135,34 +134,62 @@ mod tests {
     #[test]
     #[cfg(windows)]
     fn file_test_windows_fileext_trait_case_2() {
+        use std::cell::RefCell;
+
         // Test when seek_read(), seek_write() return Ok(0)
         struct MockFile {
             expected_offset: u64,
+            read_calls: RefCell<usize>,
+            write_calls: RefCell<usize>,
+        }
+
+        impl MockFile {
+            fn new(expected_offset: u64) -> Self {
+                Self {
+                    expected_offset,
+                    read_calls: RefCell::new(0),
+                    write_calls: RefCell::new(0),
+                }
+            }
         }
 
         impl FileExt for MockFile {
             fn seek_read(&self, _buf: &mut [u8], offset: u64) -> io::Result<usize> {
+                *self.read_calls.borrow_mut() += 1;
                 assert_eq!(offset, self.expected_offset);
                 Ok(0)
             }
 
             fn seek_write(&self, _buf: &[u8], offset: u64) -> io::Result<usize> {
+                *self.write_calls.borrow_mut() += 1;
                 assert_eq!(offset, self.expected_offset);
                 Ok(0)
             }
         }
 
+        let mut buf = [0; 256];
         for offset in [0, 1, 420] {
-            let mock_file = MockFile { expected_offset: 0 };
-            let mut buf = [0; 256];
-            assert_eq!(
-                mock_file.seek_read_exact(&mut buf, 0).unwrap_err().kind(),
-                io::ErrorKind::UnexpectedEof
-            );
-            assert_eq!(
-                mock_file.seek_write_all(&buf, 0).unwrap_err().kind(),
-                io::ErrorKind::WriteZero
-            );
+            {
+                let mock_file = MockFile::new(offset);
+                assert_eq!(
+                    mock_file
+                        .seek_read_exact(&mut buf, offset)
+                        .unwrap_err()
+                        .kind(),
+                    io::ErrorKind::UnexpectedEof
+                );
+                assert_eq!(*mock_file.read_calls.borrow(), 1);
+                assert_eq!(*mock_file.write_calls.borrow(), 0);
+            }
+            {
+                let mock_file = MockFile::new(offset);
+                assert_eq!(
+                    mock_file.seek_write_all(&buf, offset).unwrap_err().kind(),
+                    io::ErrorKind::WriteZero
+                );
+                assert_eq!(*mock_file.read_calls.borrow(), 0);
+                assert_eq!(*mock_file.write_calls.borrow(), 1);
+            }
         }
     }
 
