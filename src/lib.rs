@@ -196,9 +196,23 @@ mod tests {
     #[test]
     #[cfg(windows)]
     fn file_test_windows_fileext_trait_case_3() {
-        // Test that Err other than io::ErrorKind::Interrupted are propagated up.
+        use std::cell::RefCell;
+
+        // Test that Err are propagated up.
         struct MockFile {
             expected_offset: u64,
+            read_calls: RefCell<usize>,
+            write_calls: RefCell<usize>,
+        }
+
+        impl MockFile {
+            fn new(expected_offset: u64) -> Self {
+                Self {
+                    expected_offset,
+                    read_calls: RefCell::new(0),
+                    write_calls: RefCell::new(0),
+                }
+            }
         }
 
         impl FileExt for MockFile {
@@ -216,22 +230,29 @@ mod tests {
             }
         }
 
+        let mut buf = [0; 256];
         for offset in [0, 1, 420] {
-            let mock_file = MockFile {
-                expected_offset: offset,
-            };
-            let mut buf = [0; 256];
-            assert_eq!(
-                mock_file
-                    .seek_read_exact(&mut buf, offset)
-                    .unwrap_err()
-                    .kind(),
-                io::ErrorKind::PermissionDenied
-            );
-            assert_eq!(
-                mock_file.seek_write_all(&buf, offset).unwrap_err().kind(),
-                io::ErrorKind::ConnectionRefused
-            );
+            {
+                let mock_file = MockFile::new(offset);
+                assert_eq!(
+                    mock_file
+                        .seek_read_exact(&mut buf, offset)
+                        .unwrap_err()
+                        .kind(),
+                    io::ErrorKind::PermissionDenied
+                );
+                assert_eq!(*mock_file.read_calls.borrow(), 1);
+                assert_eq!(*mock_file.write_calls.borrow(), 0);
+            }
+            {
+                let mock_file = MockFile::new(offset);
+                assert_eq!(
+                    mock_file.seek_write_all(&buf, offset).unwrap_err().kind(),
+                    io::ErrorKind::ConnectionRefused
+                );
+                assert_eq!(*mock_file.read_calls.borrow(), 0);
+                assert_eq!(*mock_file.write_calls.borrow(), 1);
+            }
         }
     }
 
