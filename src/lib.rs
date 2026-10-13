@@ -237,6 +237,8 @@ mod tests {
     #[test]
     #[cfg(windows)]
     fn file_test_windows_fileext_trait_case_4() {
+        use std::cell::RefCell;
+
         const MSG: &[u8] =
             b"The Rust programming language helps you write faster, more reliable software.";
 
@@ -244,10 +246,23 @@ mod tests {
         // seek_write(), respectively.
         struct MockFile {
             expected_offset: u64,
+            read_calls: RefCell<usize>,
+            write_calls: RefCell<usize>,
+        }
+
+        impl MockFile {
+            fn new(expected_offset: u64) -> Self {
+                Self {
+                    expected_offset,
+                    read_calls: RefCell::new(0),
+                    write_calls: RefCell::new(0),
+                }
+            }
         }
 
         impl FileExt for MockFile {
             fn seek_read(&self, buf: &mut [u8], offset: u64) -> io::Result<usize> {
+                *self.read_calls.borrow_mut() += 1;
                 assert_eq!(offset, self.expected_offset);
                 assert_eq!(buf.len(), MSG.len());
                 assert_eq!(buf, &[0; MSG.len()]);
@@ -256,6 +271,7 @@ mod tests {
             }
 
             fn seek_write(&self, buf: &[u8], offset: u64) -> io::Result<usize> {
+                *self.write_calls.borrow_mut() += 1;
                 assert_eq!(offset, self.expected_offset);
                 assert_eq!(buf.len(), MSG.len());
                 assert_eq!(buf, MSG);
@@ -263,22 +279,21 @@ mod tests {
             }
         }
 
-        {
-            let mock_file = MockFile { expected_offset: 0 };
-            let mut buf = [0; MSG.len()];
-            check!(mock_file.seek_read_exact(&mut buf, 0));
-            assert_eq!(&buf, MSG);
-            check!(mock_file.seek_write_all(&buf, 0));
-        }
-
-        {
-            let mock_file = MockFile {
-                expected_offset: 420,
-            };
-            let mut buf = [0; MSG.len()];
-            check!(mock_file.seek_read_exact(&mut buf, 420));
-            assert_eq!(&buf, MSG);
-            check!(mock_file.seek_write_all(&buf, 420));
+        for offset in [0, 1, 420] {
+            {
+                let mock_file = MockFile::new(offset);
+                let mut buf = [0; MSG.len()];
+                check!(mock_file.seek_read_exact(&mut buf, offset));
+                assert_eq!(&buf, MSG);
+                assert_eq!(*mock_file.read_calls.borrow(), 1);
+                assert_eq!(*mock_file.write_calls.borrow(), 0);
+            }
+            {
+                let mock_file = MockFile::new(offset);
+                check!(mock_file.seek_write_all(MSG, offset));
+                assert_eq!(*mock_file.read_calls.borrow(), 0);
+                assert_eq!(*mock_file.write_calls.borrow(), 1);
+            }
         }
     }
 
