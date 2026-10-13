@@ -12,7 +12,6 @@ mod tests {
     use std::fs::{self, File, OpenOptions};
     use std::io::{self, BorrowedBuf, ErrorKind, Read, Seek, SeekFrom, Write};
     use std::mem::MaybeUninit;
-    use std::os::windows::fs::FileExt;
     use tempfile;
 
     macro_rules! check {
@@ -32,6 +31,8 @@ mod tests {
 
     #[test]
     fn test_seek_read_exact_seek_write_all() {
+        use std::os::windows::fs::FileExt;
+
         // Make sure windows FileExt.seek_read_exact(), .seek_write_all() are available
         let mut file = tempfile::tempfile().unwrap();
         let mut data = [0; 420];
@@ -53,6 +54,8 @@ mod tests {
 
     #[test]
     fn file_test_io_seek_read_exact_write_all() {
+        use std::os::windows::fs::FileExt;
+
         let tmpdir = tempfile::TempDir::new().unwrap();
         let filename = tmpdir
             .path()
@@ -111,6 +114,8 @@ mod tests {
     #[test]
     #[cfg(windows)]
     fn file_test_windows_fileext_trait_case_1() {
+        use std::os::windows::fs::FileExt;
+
         // Test when seek_read_exact(), seek_write_all() are called with empty buffers.
         struct MockFile {}
 
@@ -135,6 +140,7 @@ mod tests {
     #[cfg(windows)]
     fn file_test_windows_fileext_trait_case_2() {
         use std::cell::RefCell;
+        use std::os::windows::fs::FileExt;
 
         // Test when seek_read(), seek_write() return Ok(0)
         struct MockFile {
@@ -197,6 +203,7 @@ mod tests {
     #[cfg(windows)]
     fn file_test_windows_fileext_trait_case_3() {
         use std::cell::RefCell;
+        use std::os::windows::fs::FileExt;
 
         // Test that Err are propagated up.
         struct MockFile {
@@ -262,6 +269,7 @@ mod tests {
     #[cfg(windows)]
     fn file_test_windows_fileext_trait_case_4() {
         use std::cell::RefCell;
+        use std::os::windows::fs::FileExt;
 
         const MSG: &[u8] =
             b"The Rust programming language helps you write faster, more reliable software.";
@@ -324,6 +332,7 @@ mod tests {
     #[test]
     fn file_test_windows_fileext_trait_case_5() {
         use std::cell::RefCell;
+        use std::os::windows::fs::FileExt;
 
         const MSG: &[u8] =
         b"Rust is for students and those who are interested in learning about systems concepts.";
@@ -382,6 +391,7 @@ mod tests {
     #[test]
     fn file_test_windows_fileext_trait_case_6() {
         use std::cell::RefCell;
+        use std::os::windows::fs::FileExt;
 
         const MSG: &[u8] =
         b"The Rustonomicon digs into all the awful details that you need to understand when writing Unsafe Rust programs.";
@@ -449,6 +459,8 @@ mod tests {
 
     #[test]
     fn test_seek_read_buf_exact() {
+        use std::os::windows::fs::FileExt;
+
         let tmpdir = tempfile::TempDir::new().unwrap();
         let filename = tmpdir
             .path()
