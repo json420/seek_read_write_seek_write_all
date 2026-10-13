@@ -265,9 +265,74 @@ mod tests {
         }
     }
 
+    // This should fail now, but pass once there is a suitable rust nightly build
     #[test]
     #[cfg(windows)]
+    #[should_panic]
     fn file_test_windows_fileext_trait_case_4() {
+        use std::cell::RefCell;
+        use std::os::windows::fs::FileExt;
+
+        // Test that Err ErrorKind::Interrupted are propigated up (unlike Unix versions)
+        struct MockFile {
+            expected_offset: u64,
+            read_calls: RefCell<usize>,
+            write_calls: RefCell<usize>,
+        }
+
+        impl MockFile {
+            fn new(expected_offset: u64) -> Self {
+                Self {
+                    expected_offset,
+                    read_calls: RefCell::new(0),
+                    write_calls: RefCell::new(0),
+                }
+            }
+        }
+
+        impl FileExt for MockFile {
+            fn seek_read(&self, _buf: &mut [u8], offset: u64) -> io::Result<usize> {
+                *self.read_calls.borrow_mut() += 1;
+                assert_eq!(offset, self.expected_offset);
+                Err(io::Error::new(ErrorKind::Interrupted, "seek_read"))
+            }
+
+            fn seek_write(&self, _buf: &[u8], offset: u64) -> io::Result<usize> {
+                *self.write_calls.borrow_mut() += 1;
+                assert_eq!(offset, self.expected_offset);
+                Err(io::Error::new(ErrorKind::Interrupted, "seek_write"))
+            }
+        }
+
+        let mut buf = [0; 256];
+        for offset in [0, 1, 420] {
+            {
+                let mock_file = MockFile::new(offset);
+                assert_eq!(
+                    mock_file
+                        .seek_read_exact(&mut buf, offset)
+                        .unwrap_err()
+                        .kind(),
+                    ErrorKind::Interrupted
+                );
+                assert_eq!(*mock_file.read_calls.borrow(), 1);
+                assert_eq!(*mock_file.write_calls.borrow(), 0);
+            }
+            {
+                let mock_file = MockFile::new(offset);
+                assert_eq!(
+                    mock_file.seek_write_all(&buf, offset).unwrap_err().kind(),
+                    ErrorKind::Interrupted
+                );
+                assert_eq!(*mock_file.read_calls.borrow(), 0);
+                assert_eq!(*mock_file.write_calls.borrow(), 1);
+            }
+        }
+    }
+
+    #[test]
+    #[cfg(windows)]
+    fn file_test_windows_fileext_trait_case_5() {
         use std::cell::RefCell;
         use std::os::windows::fs::FileExt;
 
@@ -330,7 +395,7 @@ mod tests {
     }
 
     #[test]
-    fn file_test_windows_fileext_trait_case_5() {
+    fn file_test_windows_fileext_trait_case_6() {
         use std::cell::RefCell;
         use std::os::windows::fs::FileExt;
 
@@ -389,7 +454,7 @@ mod tests {
     }
 
     #[test]
-    fn file_test_windows_fileext_trait_case_6() {
+    fn file_test_windows_fileext_trait_case_7() {
         use std::cell::RefCell;
         use std::os::windows::fs::FileExt;
 
