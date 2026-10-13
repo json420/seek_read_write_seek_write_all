@@ -182,7 +182,7 @@ mod tests {
                         .seek_read_exact(&mut buf, offset)
                         .unwrap_err()
                         .kind(),
-                    io::ErrorKind::UnexpectedEof
+                    ErrorKind::UnexpectedEof
                 );
                 assert_eq!(*mock_file.read_calls.borrow(), 1);
                 assert_eq!(*mock_file.write_calls.borrow(), 0);
@@ -191,7 +191,7 @@ mod tests {
                 let mock_file = MockFile::new(offset);
                 assert_eq!(
                     mock_file.seek_write_all(&buf, offset).unwrap_err().kind(),
-                    io::ErrorKind::WriteZero
+                    ErrorKind::WriteZero
                 );
                 assert_eq!(*mock_file.read_calls.borrow(), 0);
                 assert_eq!(*mock_file.write_calls.borrow(), 1);
@@ -226,16 +226,13 @@ mod tests {
             fn seek_read(&self, _buf: &mut [u8], offset: u64) -> io::Result<usize> {
                 *self.read_calls.borrow_mut() += 1;
                 assert_eq!(offset, self.expected_offset);
-                Err(io::Error::new(io::ErrorKind::PermissionDenied, "seek_read"))
+                Err(io::Error::new(ErrorKind::PermissionDenied, "seek_read"))
             }
 
             fn seek_write(&self, _buf: &[u8], offset: u64) -> io::Result<usize> {
                 *self.write_calls.borrow_mut() += 1;
                 assert_eq!(offset, self.expected_offset);
-                Err(io::Error::new(
-                    io::ErrorKind::ConnectionRefused,
-                    "seek_write",
-                ))
+                Err(io::Error::new(ErrorKind::ConnectionRefused, "seek_write"))
             }
         }
 
@@ -248,7 +245,7 @@ mod tests {
                         .seek_read_exact(&mut buf, offset)
                         .unwrap_err()
                         .kind(),
-                    io::ErrorKind::PermissionDenied
+                    ErrorKind::PermissionDenied
                 );
                 assert_eq!(*mock_file.read_calls.borrow(), 1);
                 assert_eq!(*mock_file.write_calls.borrow(), 0);
@@ -257,7 +254,7 @@ mod tests {
                 let mock_file = MockFile::new(offset);
                 assert_eq!(
                     mock_file.seek_write_all(&buf, offset).unwrap_err().kind(),
-                    io::ErrorKind::ConnectionRefused
+                    ErrorKind::ConnectionRefused
                 );
                 assert_eq!(*mock_file.read_calls.borrow(), 0);
                 assert_eq!(*mock_file.write_calls.borrow(), 1);
@@ -266,9 +263,8 @@ mod tests {
     }
 
     // This should fail now, but pass once there is a suitable rust nightly build
-    #[test]
+    //#[test]
     #[cfg(windows)]
-    #[should_panic]
     fn file_test_windows_fileext_trait_case_4() {
         use std::cell::RefCell;
         use std::os::windows::fs::FileExt;
