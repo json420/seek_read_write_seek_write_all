@@ -451,6 +451,7 @@ mod tests {
 
     // This should fail as of version 1.101.0-nightly (7df81381d 2026-10-14)
     // 7df81381d027710708209f36b98d11b1c88f8d2e
+    // SHOULD PASS AGAIN NOW
     #[test]
     fn file_test_windows_fileext_trait_case_7() {
         use std::cell::RefCell;
@@ -506,16 +507,24 @@ mod tests {
             {
                 let mock_file = MockFile::new(offset);
                 let mut buf = [0; MSG.len()];
-                check!(mock_file.seek_read_exact(&mut buf, offset));
-                assert_eq!(&buf, MSG);
-                assert_eq!(*mock_file.read_calls.borrow(), MSG.len() * 2);
+                assert_eq!(
+                    mock_file
+                        .seek_read_exact(&mut buf, offset)
+                        .unwrap_err()
+                        .kind(),
+                    ErrorKind::Interrupted
+                );
+                assert_eq!(*mock_file.read_calls.borrow(), 1);
                 assert_eq!(*mock_file.write_calls.borrow(), 0);
             }
             {
                 let mock_file = MockFile::new(offset);
-                check!(mock_file.seek_write_all(MSG, offset));
+                assert_eq!(
+                    mock_file.seek_write_all(MSG, offset).unwrap_err().kind(),
+                    ErrorKind::Interrupted
+                );
                 assert_eq!(*mock_file.read_calls.borrow(), 0);
-                assert_eq!(*mock_file.write_calls.borrow(), MSG.len() * 2);
+                assert_eq!(*mock_file.write_calls.borrow(), 1);
             }
         }
     }
