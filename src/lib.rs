@@ -1,13 +1,8 @@
-#![feature(core_io_borrowed_buf)]
-#![feature(seek_read_exact_seek_write_all)]
-
-pub fn add(left: u64, right: u64) -> u64 {
-    left + right
-}
+#![cfg_attr(test, feature(core_io_borrowed_buf))]
+#![cfg_attr(test, feature(seek_read_exact_seek_write_all))]
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use getrandom;
     use std::fs::{self, File, OpenOptions};
     use std::io::{self, BorrowedBuf, ErrorKind, Read, Seek, SeekFrom, Write};
@@ -21,12 +16,6 @@ mod tests {
                 Err(e) => panic!("{} failed with: {e}", stringify!($e)),
             }
         };
-    }
-
-    #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
     }
 
     #[test]
