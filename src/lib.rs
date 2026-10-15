@@ -263,7 +263,7 @@ mod tests {
     }
 
     // This should fail now, but pass once there is a suitable rust nightly build
-    //#[test]
+    #[test]
     #[cfg(windows)]
     fn file_test_windows_fileext_trait_case_4() {
         use std::cell::RefCell;
@@ -449,6 +449,8 @@ mod tests {
         }
     }
 
+    // This should fail as of version 1.101.0-nightly (7df81381d 2026-10-14)
+    // 7df81381d027710708209f36b98d11b1c88f8d2e
     #[test]
     fn file_test_windows_fileext_trait_case_7() {
         use std::cell::RefCell;
