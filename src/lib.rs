@@ -120,12 +120,23 @@ mod tests {
             }
         }
 
-        let mock_file = MockFile {};
-        check!(mock_file.seek_read_exact(&mut [], 420));
-        check!(mock_file.seek_write_all(&[], 420));
-        let mut buf: [MaybeUninit<u8>; 0] = [MaybeUninit::uninit(); 0];
-        let mut buf: BorrowedBuf<u8> = BorrowedBuf::from(buf.as_mut_slice());
-        check!(mock_file.seek_read_buf_exact(buf.unfilled(), 420));
+        for offset in [0, 1, 420] {
+            {
+                let mock_file = MockFile {};
+                check!(mock_file.seek_read_exact(&mut [], offset));
+            }
+            {
+                let mock_file = MockFile {};
+                let mut buf: [MaybeUninit<u8>; 0] = [MaybeUninit::uninit(); 0];
+                let mut buf: BorrowedBuf<u8> = BorrowedBuf::from(buf.as_mut_slice());
+                check!(mock_file.seek_read_buf_exact(buf.unfilled(), offset));
+            }
+
+            {
+                let mock_file = MockFile {};
+                check!(mock_file.seek_write_all(&[], offset));
+            }
+        }
     }
 
     #[test]
