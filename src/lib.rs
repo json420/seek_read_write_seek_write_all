@@ -121,10 +121,11 @@ mod tests {
         }
 
         let mock_file = MockFile {};
-        check!(mock_file.seek_read_exact(&mut [], 0));
-        check!(mock_file.seek_write_all(&[], 0));
         check!(mock_file.seek_read_exact(&mut [], 420));
         check!(mock_file.seek_write_all(&[], 420));
+        let mut buf: [MaybeUninit<u8>; 0] = [MaybeUninit::uninit(); 0];
+        let mut buf: BorrowedBuf<u8> = BorrowedBuf::from(buf.as_mut_slice());
+        check!(mock_file.seek_read_buf_exact(buf.unfilled(), 420));
     }
 
     #[test]
@@ -164,10 +165,10 @@ mod tests {
             }
         }
 
-        let mut buf = [0; 256];
         for offset in [0, 1, 420] {
             {
                 let mock_file = MockFile::new(offset);
+                let mut buf = [0; 256];
                 assert_eq!(
                     mock_file
                         .seek_read_exact(&mut buf, offset)
@@ -180,6 +181,21 @@ mod tests {
             }
             {
                 let mock_file = MockFile::new(offset);
+                let mut buf: [MaybeUninit<u8>; 256] = [MaybeUninit::uninit(); 256];
+                let mut buf: BorrowedBuf<u8> = BorrowedBuf::from(buf.as_mut_slice());
+                assert_eq!(
+                    mock_file
+                        .seek_read_buf_exact(buf.unfilled(), offset)
+                        .unwrap_err()
+                        .kind(),
+                    ErrorKind::UnexpectedEof
+                );
+                assert_eq!(*mock_file.read_calls.borrow(), 1);
+                assert_eq!(*mock_file.write_calls.borrow(), 0);
+            }
+            {
+                let mock_file = MockFile::new(offset);
+                let buf = [42_u8; 69];
                 assert_eq!(
                     mock_file.seek_write_all(&buf, offset).unwrap_err().kind(),
                     ErrorKind::WriteZero
@@ -227,10 +243,10 @@ mod tests {
             }
         }
 
-        let mut buf = [0; 256];
         for offset in [0, 1, 420] {
             {
                 let mock_file = MockFile::new(offset);
+                let mut buf = [0; 256];
                 assert_eq!(
                     mock_file
                         .seek_read_exact(&mut buf, offset)
@@ -243,6 +259,21 @@ mod tests {
             }
             {
                 let mock_file = MockFile::new(offset);
+                let mut buf: [MaybeUninit<u8>; 256] = [MaybeUninit::uninit(); 256];
+                let mut buf: BorrowedBuf<u8> = BorrowedBuf::from(buf.as_mut_slice());
+                assert_eq!(
+                    mock_file
+                        .seek_read_buf_exact(buf.unfilled(), offset)
+                        .unwrap_err()
+                        .kind(),
+                    ErrorKind::PermissionDenied
+                );
+                assert_eq!(*mock_file.read_calls.borrow(), 1);
+                assert_eq!(*mock_file.write_calls.borrow(), 0);
+            }
+            {
+                let mock_file = MockFile::new(offset);
+                let buf = [42_u8; 69];
                 assert_eq!(
                     mock_file.seek_write_all(&buf, offset).unwrap_err().kind(),
                     ErrorKind::ConnectionRefused
@@ -291,10 +322,10 @@ mod tests {
             }
         }
 
-        let mut buf = [0; 256];
         for offset in [0, 1, 420] {
             {
                 let mock_file = MockFile::new(offset);
+                let mut buf = [0; 256];
                 assert_eq!(
                     mock_file
                         .seek_read_exact(&mut buf, offset)
@@ -307,6 +338,21 @@ mod tests {
             }
             {
                 let mock_file = MockFile::new(offset);
+                let mut buf: [MaybeUninit<u8>; 256] = [MaybeUninit::uninit(); 256];
+                let mut buf: BorrowedBuf<u8> = BorrowedBuf::from(buf.as_mut_slice());
+                assert_eq!(
+                    mock_file
+                        .seek_read_buf_exact(buf.unfilled(), offset)
+                        .unwrap_err()
+                        .kind(),
+                    ErrorKind::Interrupted
+                );
+                assert_eq!(*mock_file.read_calls.borrow(), 1);
+                assert_eq!(*mock_file.write_calls.borrow(), 0);
+            }
+            {
+                let mock_file = MockFile::new(offset);
+                let buf = [42_u8; 69];
                 assert_eq!(
                     mock_file.seek_write_all(&buf, offset).unwrap_err().kind(),
                     ErrorKind::Interrupted
@@ -519,6 +565,20 @@ mod tests {
                 assert_eq!(
                     mock_file
                         .seek_read_exact(&mut buf, offset)
+                        .unwrap_err()
+                        .kind(),
+                    ErrorKind::Interrupted
+                );
+                assert_eq!(*mock_file.read_calls.borrow(), 1);
+                assert_eq!(*mock_file.write_calls.borrow(), 0);
+            }
+            {
+                let mock_file = MockFile::new(offset);
+                let mut buf: [MaybeUninit<u8>; MSG.len()] = [MaybeUninit::uninit(); MSG.len()];
+                let mut buf: BorrowedBuf<u8> = BorrowedBuf::from(buf.as_mut_slice());
+                assert_eq!(
+                    mock_file
+                        .seek_read_buf_exact(buf.unfilled(), offset)
                         .unwrap_err()
                         .kind(),
                     ErrorKind::Interrupted
