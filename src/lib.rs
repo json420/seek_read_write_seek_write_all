@@ -107,7 +107,7 @@ mod tests {
     fn file_test_windows_fileext_trait_case_1() {
         use std::os::windows::fs::FileExt;
 
-        // Test when seek_read_exact(), seek_write_all() are called with empty buffers.
+        // Test when seek_read_exact(), seek_read_buf_exact(), seek_write_all() are called with empty buffers.
         struct MockFile {}
 
         impl FileExt for MockFile {
@@ -131,7 +131,6 @@ mod tests {
                 let mut buf: BorrowedBuf<u8> = BorrowedBuf::from(buf.as_mut_slice());
                 check!(mock_file.seek_read_buf_exact(buf.unfilled(), offset));
             }
-
             {
                 let mock_file = MockFile {};
                 check!(mock_file.seek_write_all(&[], offset));
@@ -295,14 +294,13 @@ mod tests {
         }
     }
 
-    // This should fail now, but pass once there is a suitable rust nightly build
     #[test]
     #[cfg(windows)]
     fn file_test_windows_fileext_trait_case_4() {
         use std::cell::RefCell;
         use std::os::windows::fs::FileExt;
 
-        // Test that Err ErrorKind::Interrupted are propigated up (unlike Unix versions)
+        // Test that Err ErrorKind::Interrupted are propagated up (unlike Unix versions)
         struct MockFile {
             expected_offset: u64,
             read_calls: RefCell<usize>,
