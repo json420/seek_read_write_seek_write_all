@@ -19,6 +19,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(windows)]
     fn test_seek_read_exact_seek_write_all() {
         use std::os::windows::fs::FileExt;
 
@@ -42,6 +43,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(windows)]
     fn file_test_io_seek_read_exact_write_all() {
         use std::os::windows::fs::FileExt;
 
@@ -380,6 +382,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(windows)]
     fn file_test_windows_fileext_trait_case_6() {
         use std::cell::RefCell;
         use std::os::windows::fs::FileExt;
@@ -442,6 +445,7 @@ mod tests {
     // 7df81381d027710708209f36b98d11b1c88f8d2e
     // SHOULD PASS AGAIN NOW
     #[test]
+    #[cfg(windows)]
     fn file_test_windows_fileext_trait_case_7() {
         use std::cell::RefCell;
         use std::os::windows::fs::FileExt;
@@ -519,6 +523,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(windows)]
     fn test_seek_read_buf_exact() {
         use std::os::windows::fs::FileExt;
 
