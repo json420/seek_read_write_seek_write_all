@@ -374,6 +374,14 @@ mod tests {
             }
             {
                 let mock_file = MockFile::new(offset);
+                let mut buf: [MaybeUninit<u8>; MSG.len()] = [MaybeUninit::uninit(); MSG.len()];
+                let mut buf: BorrowedBuf<u8> = BorrowedBuf::from(buf.as_mut_slice());
+                check!(mock_file.seek_read_buf_exact(buf.unfilled(), offset));
+                assert_eq!(*mock_file.read_calls.borrow(), 1);
+                assert_eq!(*mock_file.write_calls.borrow(), 0);
+            }
+            {
+                let mock_file = MockFile::new(offset);
                 check!(mock_file.seek_write_all(MSG, offset));
                 assert_eq!(*mock_file.read_calls.borrow(), 0);
                 assert_eq!(*mock_file.write_calls.borrow(), 1);
@@ -429,6 +437,14 @@ mod tests {
                 let mut buf = [0; MSG.len()];
                 check!(mock_file.seek_read_exact(&mut buf, offset));
                 assert_eq!(&buf, MSG);
+                assert_eq!(*mock_file.read_calls.borrow(), MSG.len());
+                assert_eq!(*mock_file.write_calls.borrow(), 0);
+            }
+            {
+                let mock_file = MockFile::new(offset);
+                let mut buf: [MaybeUninit<u8>; MSG.len()] = [MaybeUninit::uninit(); MSG.len()];
+                let mut buf: BorrowedBuf<u8> = BorrowedBuf::from(buf.as_mut_slice());
+                check!(mock_file.seek_read_buf_exact(buf.unfilled(), offset));
                 assert_eq!(*mock_file.read_calls.borrow(), MSG.len());
                 assert_eq!(*mock_file.write_calls.borrow(), 0);
             }
