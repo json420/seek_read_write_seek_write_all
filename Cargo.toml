@@ -2,6 +2,7 @@
 name = "seek_read_write_seek_write_all"
 version = "0.1.0"
 edition = "2024"
+rust-version = "1.100"
 
 [dev-dependencies]
 getrandom = "0.4.3"
